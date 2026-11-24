@@ -3,40 +3,450 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Бас-симулятор: NFC-валидатор</title>
+  <title>Bus Validator</title>
+  <style>
+    :root {
+      --bg: #0b0f1a;
+      --card: #141a2b;
+      --card-2: #1b2338;
+      --accent: #3ddc97;
+      --accent-2: #4f8cff;
+      --danger: #ff5c7a;
+      --text: #e8ecf8;
+      --muted: #7d88a8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      background:
+        radial-gradient(circle at 20% 0%, #1d2a55 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, #0f3b33 0%, transparent 45%),
+        var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 13px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .ticket {
+      background: linear-gradient(145deg, var(--card-2), var(--card));
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(61,220,151,0.12);
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+    .status-pill.off {
+      background: rgba(255,92,122,0.12);
+      color: var(--danger);
+    }
+    .status-pill::before {
+      content: "";
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    .price-label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .price {
+      font-size: 56px;
+      font-weight: 700;
+      margin: 4px 0 28px;
+      letter-spacing: -1px;
+    }
+    .price span {
+      font-size: 24px;
+      color: var(--muted);
+      margin-left: 4px;
+    }
+
+    .nfc-ring {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      margin: 0 auto 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, #1f2a4a, #111729);
+      border: 2px solid rgba(79,140,255,0.4);
+      cursor: pointer;
+      transition: transform 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nfc-ring:active { transform: scale(0.96); }
+    .nfc-ring::before,
+    .nfc-ring::after {
+      content: "";
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      border: 2px solid rgba(79,140,255,0.25);
+      animation: pulse 2.4s infinite ease-out;
+    }
+    .nfc-ring::after { animation-delay: 1.2s; }
+    .nfc-ring.scanning::before,
+    .nfc-ring.scanning::after { border-color: var(--accent); }
+
+    @keyframes pulse {
+      0%   { transform: scale(0.9); opacity: 1; }
+      100% { transform: scale(1.3); opacity: 0; }
+    }
+
+    .nfc-icon {
+      font-size: 42px;
+      color: var(--accent-2);
+    }
+
+    .hint {
+      font-size: 15px;
+      color: var(--muted);
+      min-height: 46px;
+      line-height: 1.4;
+    }
+
+    .hint.success { color: var(--accent); font-weight: 600; font-size: 18px; }
+    .hint.error   { color: var(--danger); }
+
+    .admin-link {
+      margin-top: 22px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* ---------- Admin panel ---------- */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,8,15,0.7);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+    }
+    .overlay.show { display: flex; animation: fade 0.25s ease; }
+
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+    .admin {
+      width: 100%;
+      max-width: 360px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 28px 24px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+      animation: rise 0.3s ease;
+    }
+    @keyframes rise {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    .admin h2 {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .admin .sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+
+    .field {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+    .field label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .field input[type="number"] {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 18px;
+      background: var(--card-2);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input[type="number"]:focus { border-color: var(--accent-2); }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card-2);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 24px;
+    }
+    .toggle-row .text { text-align: left; }
+    .toggle-row .title { font-size: 15px; }
+    .toggle-row .desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .switch {
+      position: relative;
+      width: 52px;
+      height: 30px;
+      flex-shrink: 0;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #2a3350;
+      border-radius: 999px;
+      transition: 0.25s;
+      cursor: pointer;
+    }
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 24px; height: 24px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.25s;
+    }
+    .switch input:checked + .slider { background: var(--accent); }
+    .switch input:checked + .slider::before { transform: translateX(22px); }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-2), #7b5cff);
+      color: #fff;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .saved-msg {
+      font-size: 13px;
+      color: var(--accent);
+      min-height: 18px;
+      margin-top: 4px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .saved-msg.show { opacity: 1; }
+  </style>
 </head>
 <body>
-  <button id="startBtn">Приложить метку</button>
-  <p id="status"></p>
 
-  <div id="adminPanel" hidden>
-    <h2>Админ-панель</h2>
-    <!-- сюда вставьте содержимое панели -->
+  <div class="app">
+    <div class="logo">Bus Validator</div>
+
+    <div class="ticket">
+      <div id="statusPill" class="status-pill">Валидатор активен</div>
+
+      <div class="price-label">Стоимость проезда</div>
+      <div class="price"><span id="priceView">150</span><span>₽</span></div>
+
+      <div id="nfcRing" class="nfc-ring">
+        <div class="nfc-icon">◉</div>
+      </div>
+
+      <div id="hint" class="hint">Приложите карту к метке</div>
+    </div>
+
+    <button class="admin-link" id="openAdminBtn">Админ-панель</button>
+  </div>
+
+  <!-- Админ-панель -->
+  <div class="overlay" id="adminOverlay">
+    <div class="admin">
+      <h2>Настройки</h2>
+      <p class="sub">Изменения применяются сразу после сохранения</p>
+
+      <div class="field">
+        <label for="priceInput">Стоимость проезда, ₽</label>
+        <input type="number" id="priceInput" min="0" step="1">
+      </div>
+
+      <div class="toggle-row">
+        <div class="text">
+          <div class="title">Валидатор</div>
+          <div class="desc" id="toggleDesc">Работает</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="enabledInput">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <button class="btn btn-primary" id="saveBtn">Сохранить</button>
+      <button class="btn btn-ghost" id="closeAdminBtn">Закрыть</button>
+      <div class="saved-msg" id="savedMsg">Сохранено ✓</div>
+    </div>
   </div>
 
   <script>
-    const statusEl = document.getElementById('status');
-    const adminPanel = document.getElementById('adminPanel');
+    const STORAGE_KEY = 'busValidatorSettings';
+    const DEFAULTS = { price: 150, enabled: true };
 
-    function openAdminPanel() {
-      adminPanel.hidden = false;
-      statusEl.textContent = 'Доступ администратора открыт';
+    const els = {
+      pill: document.getElementById('statusPill'),
+      priceView: document.getElementById('priceView'),
+      ring: document.getElementById('nfcRing'),
+      hint: document.getElementById('hint'),
+      openAdmin: document.getElementById('openAdminBtn'),
+      overlay: document.getElementById('adminOverlay'),
+      priceInput: document.getElementById('priceInput'),
+      enabledInput: document.getElementById('enabledInput'),
+      toggleDesc: document.getElementById('toggleDesc'),
+      save: document.getElementById('saveBtn'),
+      close: document.getElementById('closeAdminBtn'),
+      savedMsg: document.getElementById('savedMsg'),
+    };
+
+    let settings = loadSettings();
+    let scanning = false;
+
+    function loadSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        return { ...DEFAULTS, ...saved };
+      } catch {
+        return { ...DEFAULTS };
+      }
     }
 
-    function buyTicket() {
-      statusEl.textContent = 'Билет куплен (симуляция) ✅';
+    function saveSettings() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     }
 
-    document.getElementById('startBtn').addEventListener('click', async () => {
+    function renderMain() {
+      els.priceView.textContent = settings.price;
+      els.pill.textContent = settings.enabled ? 'Валидатор активен' : 'Валидатор выключен';
+      els.pill.classList.toggle('off', !settings.enabled);
+    }
+
+    function setHint(text, type = '') {
+      els.hint.textContent = text;
+      els.hint.className = 'hint ' + type;
+    }
+
+    function openAdmin() {
+      els.priceInput.value = settings.price;
+      els.enabledInput.checked = settings.enabled;
+      updateToggleDesc();
+      els.overlay.classList.add('show');
+    }
+
+    function closeAdmin() {
+      els.overlay.classList.remove('show');
+    }
+
+    function updateToggleDesc() {
+      els.toggleDesc.textContent = els.enabledInput.checked
+        ? 'Принимает карты'
+        : 'Оплата отключена';
+    }
+
+    els.enabledInput.addEventListener('change', updateToggleDesc);
+
+    els.save.addEventListener('click', () => {
+      const price = parseInt(els.priceInput.value, 10);
+      if (isNaN(price) || price < 0) {
+        els.priceInput.style.borderColor = 'var(--danger)';
+        return;
+      }
+      els.priceInput.style.borderColor = '';
+      settings.price = price;
+      settings.enabled = els.enabledInput.checked;
+      saveSettings();
+      renderMain();
+
+      els.savedMsg.classList.add('show');
+      setTimeout(() => els.savedMsg.classList.remove('show'), 1500);
+    });
+
+    els.close.addEventListener('click', closeAdmin);
+    els.openAdmin.addEventListener('click', openAdmin);
+    els.overlay.addEventListener('click', e => {
+      if (e.target === els.overlay) closeAdmin();
+    });
+
+    function showTicketSuccess() {
+      setHint(`Оплачено ${settings.price} ₽ ✅`, 'success');
+    }
+
+    function showDisabled() {
+      setHint('Валидатор временно отключён', 'error');
+    }
+
+    async function startScan() {
+      if (scanning) return;
+
       if (!('NDEFReader' in window)) {
-        statusEl.textContent = 'Web NFC не поддерживается в этом браузере';
+        setHint('Web NFC не поддерживается. Откройте страницу в Chrome на Android', 'error');
         return;
       }
 
       try {
         const reader = new NDEFReader();
         await reader.scan();
-        statusEl.textContent = 'Ожидание метки...';
+        scanning = true;
+        els.ring.classList.add('scanning');
+        setHint('Ожидание карты...');
 
         reader.onreading = ({ message }) => {
           for (const record of message.records) {
@@ -47,21 +457,31 @@
               .trim()
               .toLowerCase();
 
+            // Админ-метка работает всегда, даже если валидатор выключен
             if (text === 'админ') {
-              openAdminPanel();
+              openAdmin();
               return;
             }
           }
-          buyTicket();
+
+          if (!settings.enabled) {
+            showDisabled();
+            return;
+          }
+          showTicketSuccess();
         };
 
         reader.onreadingerror = () => {
-          statusEl.textContent = 'Не удалось прочитать метку, попробуйте ещё раз';
+          setHint('Не удалось прочитать метку. Попробуйте ещё раз', 'error');
         };
       } catch (err) {
-        statusEl.textContent = 'Ошибка: ' + err.message;
+        setHint('Ошибка: ' + err.message, 'error');
       }
-    });
+    }
+
+    els.ring.addEventListener('click', startScan);
+
+    renderMain();
   </script>
 </body>
 </html>
