@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Бас-симулятор: NFC-валидатор</title>
+</head>
+<body>
+  <button id="startBtn">Приложить метку</button>
+  <p id="status"></p>
+
+  <div id="adminPanel" hidden>
+    <h2>Админ-панель</h2>
+    <!-- сюда вставьте содержимое панели -->
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const adminPanel = document.getElementById('adminPanel');
+
+    function openAdminPanel() {
+      adminPanel.hidden = false;
+      statusEl.textContent = 'Доступ администратора открыт';
+    }
+
+    function buyTicket() {
+      statusEl.textContent = 'Билет куплен (симуляция) ✅';
+    }
+
+    document.getElementById('startBtn').addEventListener('click', async () => {
+      if (!('NDEFReader' in window)) {
+        statusEl.textContent = 'Web NFC не поддерживается в этом браузере';
+        return;
+      }
+
+      try {
+        const reader = new NDEFReader();
+        await reader.scan();
+        statusEl.textContent = 'Ожидание метки...';
+
+        reader.onreading = ({ message }) => {
+          for (const record of message.records) {
+            if (record.recordType !== 'text') continue;
+
+            const text = new TextDecoder(record.encoding || 'utf-8')
+              .decode(record.data)
+              .trim()
+              .toLowerCase();
+
+            if (text === 'админ') {
+              openAdminPanel();
+              return;
+            }
+          }
+          buyTicket();
+        };
+
+        reader.onreadingerror = () => {
+          statusEl.textContent = 'Не удалось прочитать метку, попробуйте ещё раз';
+        };
+      } catch (err) {
+        statusEl.textContent = 'Ошибка: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
