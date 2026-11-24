@@ -11,7 +11,7 @@
       --card-2: #1b2338;
       --accent: #3ddc97;
       --accent-2: #4f8cff;
-      --danger: #ff5c7a;
+      --danger: #ff4d6d;
       --text: #e8ecf8;
       --muted: #7d88a8;
     }
@@ -30,6 +30,7 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
+      overflow-x: hidden;
     }
 
     .app {
@@ -54,6 +55,15 @@
       box-shadow: 0 20px 60px rgba(0,0,0,0.45);
     }
 
+    .ticket.shake { animation: shake 0.45s; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-10px); }
+      40% { transform: translateX(10px); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
+    }
+
     .status-pill {
       display: inline-flex;
       align-items: center;
@@ -66,7 +76,7 @@
       margin-bottom: 18px;
     }
     .status-pill.off {
-      background: rgba(255,92,122,0.12);
+      background: rgba(255,77,109,0.12);
       color: var(--danger);
     }
     .status-pill::before {
@@ -77,10 +87,7 @@
       box-shadow: 0 0 10px currentColor;
     }
 
-    .price-label {
-      font-size: 14px;
-      color: var(--muted);
-    }
+    .price-label { font-size: 14px; color: var(--muted); }
     .price {
       font-size: 56px;
       font-weight: 700;
@@ -93,22 +100,29 @@
       margin-left: 4px;
     }
 
+    /* ----- Зона касания ----- */
+    .visual {
+      min-height: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .visual:active .nfc-ring { transform: scale(0.96); }
+
     .nfc-ring {
       position: relative;
       width: 140px;
       height: 140px;
-      margin: 0 auto 24px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       background: radial-gradient(circle, #1f2a4a, #111729);
       border: 2px solid rgba(79,140,255,0.4);
-      cursor: pointer;
       transition: transform 0.2s;
-      -webkit-tap-highlight-color: transparent;
     }
-    .nfc-ring:active { transform: scale(0.96); }
     .nfc-ring::before,
     .nfc-ring::after {
       content: "";
@@ -127,32 +141,120 @@
       100% { transform: scale(1.3); opacity: 0; }
     }
 
-    .nfc-icon {
-      font-size: 42px;
-      color: var(--accent-2);
+    .nfc-icon { font-size: 42px; color: var(--accent-2); }
+
+    /* ----- Валидатор не активен ----- */
+    .off-view {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
     }
+    .off-view svg {
+      width: 150px;
+      height: 150px;
+      filter: drop-shadow(0 0 18px rgba(255,77,109,0.5));
+    }
+    .off-view .cross-line {
+      stroke: var(--danger);
+      stroke-width: 14;
+      stroke-linecap: round;
+      fill: none;
+      stroke-dasharray: 150;
+      stroke-dashoffset: 150;
+      animation: draw 0.5s ease forwards;
+    }
+    .off-view .cross-line.second { animation-delay: 0.25s; }
+    .off-view .cross-ring {
+      stroke: rgba(255,77,109,0.35);
+      stroke-width: 4;
+      fill: none;
+    }
+    .off-text {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--danger);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      line-height: 1.2;
+    }
+
+    body.is-off .nfc-view { display: none; }
+    body.is-off .off-view { display: flex; }
+
+    @keyframes draw { to { stroke-dashoffset: 0; } }
 
     .hint {
       font-size: 15px;
       color: var(--muted);
       min-height: 46px;
       line-height: 1.4;
+      margin-top: 8px;
     }
+    .hint.error { color: var(--danger); }
 
-    .hint.success { color: var(--accent); font-weight: 600; font-size: 18px; }
-    .hint.error   { color: var(--danger); }
+    /* ----- Анимация оплаты ----- */
+    .paid {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,8,15,0.8);
+      backdrop-filter: blur(6px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      z-index: 20;
+    }
+    .paid.show { display: flex; animation: fade 0.25s ease; }
 
-    .admin-link {
-      margin-top: 22px;
-      background: none;
-      border: none;
+    .paid-circle {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 60px rgba(61,220,151,0.6);
+      animation: pop 0.5s cubic-bezier(.2,1.4,.4,1);
+    }
+    .paid-circle svg { width: 70px; height: 70px; }
+    .paid-circle path {
+      fill: none;
+      stroke: #0b0f1a;
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 60;
+      stroke-dashoffset: 60;
+      animation: draw 0.4s ease 0.35s forwards;
+    }
+    .paid-amount {
+      font-size: 34px;
+      font-weight: 700;
+      color: var(--accent);
+      opacity: 0;
+      animation: rise 0.4s ease 0.6s forwards;
+    }
+    .paid-sub {
+      font-size: 15px;
       color: var(--muted);
-      font-size: 12px;
-      cursor: pointer;
-      text-decoration: underline;
+      opacity: 0;
+      animation: rise 0.4s ease 0.75s forwards;
     }
 
-    /* ---------- Admin panel ---------- */
+    @keyframes pop {
+      0%   { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+    @keyframes rise {
+      from { transform: translateY(12px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ----- Админ-панель ----- */
     .overlay {
       position: fixed;
       inset: 0;
@@ -166,8 +268,6 @@
     }
     .overlay.show { display: flex; animation: fade 0.25s ease; }
 
-    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-
     .admin {
       width: 100%;
       max-width: 360px;
@@ -177,26 +277,12 @@
       padding: 28px 24px;
       box-shadow: 0 30px 80px rgba(0,0,0,0.6);
       animation: rise 0.3s ease;
-    }
-    @keyframes rise {
-      from { transform: translateY(20px); opacity: 0; }
-      to   { transform: translateY(0); opacity: 1; }
-    }
-
-    .admin h2 {
-      font-size: 20px;
-      margin-bottom: 4px;
-    }
-    .admin .sub {
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 24px;
-    }
-
-    .field {
       text-align: left;
-      margin-bottom: 18px;
     }
+    .admin h2 { font-size: 20px; margin-bottom: 4px; }
+    .admin .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+
+    .field { margin-bottom: 18px; }
     .field label {
       display: block;
       font-size: 13px;
@@ -225,16 +311,10 @@
       padding: 14px 16px;
       margin-bottom: 24px;
     }
-    .toggle-row .text { text-align: left; }
     .toggle-row .title { font-size: 15px; }
     .toggle-row .desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-    .switch {
-      position: relative;
-      width: 52px;
-      height: 30px;
-      flex-shrink: 0;
-    }
+    .switch { position: relative; width: 52px; height: 30px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
       position: absolute;
@@ -265,7 +345,7 @@
       font-weight: 600;
       cursor: pointer;
       margin-bottom: 10px;
-      transition: transform 0.1s, opacity 0.2s;
+      transition: transform 0.1s;
     }
     .btn:active { transform: scale(0.98); }
     .btn-primary {
@@ -282,7 +362,7 @@
       font-size: 13px;
       color: var(--accent);
       min-height: 18px;
-      margin-top: 4px;
+      text-align: center;
       opacity: 0;
       transition: opacity 0.3s;
     }
@@ -294,23 +374,45 @@
   <div class="app">
     <div class="logo">Bus Validator</div>
 
-    <div class="ticket">
+    <div class="ticket" id="ticket">
       <div id="statusPill" class="status-pill">Валидатор активен</div>
 
       <div class="price-label">Стоимость проезда</div>
       <div class="price"><span id="priceView">150</span><span>₽</span></div>
 
-      <div id="nfcRing" class="nfc-ring">
-        <div class="nfc-icon">◉</div>
+      <div class="visual" id="visual">
+        <div class="nfc-view">
+          <div id="nfcRing" class="nfc-ring">
+            <div class="nfc-icon">◉</div>
+          </div>
+        </div>
+
+        <div class="off-view">
+          <svg viewBox="0 0 150 150" aria-hidden="true">
+            <circle class="cross-ring" cx="75" cy="75" r="68"/>
+            <line class="cross-line" x1="45" y1="45" x2="105" y2="105"/>
+            <line class="cross-line second" x1="105" y1="45" x2="45" y2="105"/>
+          </svg>
+          <div class="off-text">Валидатор<br>не активен</div>
+        </div>
       </div>
 
       <div id="hint" class="hint">Приложите карту к метке</div>
     </div>
-
-    <button class="admin-link" id="openAdminBtn">Админ-панель</button>
   </div>
 
-  <!-- Админ-панель -->
+  <!-- Анимация успешной оплаты -->
+  <div class="paid" id="paidOverlay">
+    <div class="paid-circle">
+      <svg viewBox="0 0 70 70" aria-hidden="true">
+        <path d="M18 36 L30 48 L53 23"/>
+      </svg>
+    </div>
+    <div class="paid-amount" id="paidAmount">150 ₽</div>
+    <div class="paid-sub">Проезд оплачен</div>
+  </div>
+
+  <!-- Админ-панель (открывается только админ-меткой) -->
   <div class="overlay" id="adminOverlay">
     <div class="admin">
       <h2>Настройки</h2>
@@ -322,7 +424,7 @@
       </div>
 
       <div class="toggle-row">
-        <div class="text">
+        <div>
           <div class="title">Валидатор</div>
           <div class="desc" id="toggleDesc">Работает</div>
         </div>
@@ -341,13 +443,17 @@
   <script>
     const STORAGE_KEY = 'busValidatorSettings';
     const DEFAULTS = { price: 150, enabled: true };
+    const PAID_DURATION = 2200;
 
     const els = {
+      ticket: document.getElementById('ticket'),
       pill: document.getElementById('statusPill'),
       priceView: document.getElementById('priceView'),
+      visual: document.getElementById('visual'),
       ring: document.getElementById('nfcRing'),
       hint: document.getElementById('hint'),
-      openAdmin: document.getElementById('openAdminBtn'),
+      paid: document.getElementById('paidOverlay'),
+      paidAmount: document.getElementById('paidAmount'),
       overlay: document.getElementById('adminOverlay'),
       priceInput: document.getElementById('priceInput'),
       enabledInput: document.getElementById('enabledInput'),
@@ -359,6 +465,7 @@
 
     let settings = loadSettings();
     let scanning = false;
+    let paidTimer = null;
 
     function loadSettings() {
       try {
@@ -377,11 +484,18 @@
       els.priceView.textContent = settings.price;
       els.pill.textContent = settings.enabled ? 'Валидатор активен' : 'Валидатор выключен';
       els.pill.classList.toggle('off', !settings.enabled);
+      document.body.classList.toggle('is-off', !settings.enabled);
     }
 
     function setHint(text, type = '') {
       els.hint.textContent = text;
       els.hint.className = 'hint ' + type;
+    }
+
+    function shake() {
+      els.ticket.classList.remove('shake');
+      void els.ticket.offsetWidth; // перезапуск анимации
+      els.ticket.classList.add('shake');
     }
 
     function openAdmin() {
@@ -420,17 +534,24 @@
     });
 
     els.close.addEventListener('click', closeAdmin);
-    els.openAdmin.addEventListener('click', openAdmin);
     els.overlay.addEventListener('click', e => {
       if (e.target === els.overlay) closeAdmin();
     });
 
-    function showTicketSuccess() {
-      setHint(`Оплачено ${settings.price} ₽ ✅`, 'success');
+    function showPaid() {
+      els.paidAmount.textContent = settings.price + ' ₽';
+      els.paid.classList.remove('show');
+      void els.paid.offsetWidth; // перезапуск анимации
+      els.paid.classList.add('show');
+      setHint('');
+
+      clearTimeout(paidTimer);
+      paidTimer = setTimeout(() => els.paid.classList.remove('show'), PAID_DURATION);
     }
 
     function showDisabled() {
-      setHint('Валидатор временно отключён', 'error');
+      shake();
+      setHint('Оплата сейчас недоступна', 'error');
     }
 
     async function startScan() {
@@ -468,7 +589,7 @@
             showDisabled();
             return;
           }
-          showTicketSuccess();
+          showPaid();
         };
 
         reader.onreadingerror = () => {
@@ -479,7 +600,7 @@
       }
     }
 
-    els.ring.addEventListener('click', startScan);
+    els.visual.addEventListener('click', startScan);
 
     renderMain();
   </script>
